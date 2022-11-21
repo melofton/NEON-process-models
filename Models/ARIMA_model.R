@@ -168,6 +168,7 @@ ARIMA_model <- targets %>%
   # add NA values for explicit gaps
   tsibble::fill_gaps() %>%
   model(ARIMA(temperature ~ air_temperature)) 
+message('ARIMA fitted')
 
 # Forecast using the fitted model
 ARIMA_fable <- ARIMA_model %>%
@@ -176,7 +177,7 @@ ARIMA_fable <- ARIMA_model %>%
          # Recode the ensemble number based on the scenario and replicate
          parameter = as.numeric(.rep) + (100 * (as.numeric(.scenario) - 1)))  %>%
   filter(datetime > Sys.Date())
-
+message('forecast generated')
 
 # Function to convert to EFI standard
 convert.to.efi_standard <- function(df){
