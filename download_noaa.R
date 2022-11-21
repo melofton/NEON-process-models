@@ -27,9 +27,7 @@ noaa_future_mean <- NULL
 # Past stacked weather
 df_past <- neon4cast::noaa_stage3()
 # Forecasts
-# New forecast only available at 5am UTC the next day
-forecast_date <- Sys.Date() 
-noaa_date <- forecast_date - days(1)
+
 
 df_future <- neon4cast::noaa_stage2()
 
@@ -56,15 +54,7 @@ for (i in 1:length(site_data$field_site_id)) {
     dplyr::collect()
   message(site_data$field_site_id[i], ' stage 3 data downloaded')
   
-  
-  noaa_future <- df_future |> 
-    dplyr::filter(reference_datetime == noaa_date,
-                  datetime >= forecast_date,
-                  site_id %in% test_site,
-                  variable == "air_temperature") |> 
-    dplyr::collect()
-  message(site_data$field_site_id[i], ' stage 2 data downloaded')
-  
+
   # aggregate the past to mean daily values
   noaa_past_agg <- noaa_past |> 
     mutate(datetime = as_date(datetime)) |> 
@@ -74,6 +64,16 @@ for (i in 1:length(site_data$field_site_id)) {
     # convert air temp to C
     mutate(air_temperature = air_temperature - 273.15)
   
+  # New forecast only available at 5am UTC the next day
+  forecast_date <- Sys.Date() 
+  noaa_date <- max(noaa_past_agg$datetime) + days(1)
+  
+  noaa_future <- df_future |> 
+    dplyr::filter(reference_datetime == noaa_date,
+                  datetime >= noaa_date,
+                  site_id %in% test_site,
+                  variable == "air_temperature") |> 
+    dplyr::collect()
   
   # Aggregate for each ensemble for future
   noaa_future_agg <- noaa_future |> 
@@ -82,6 +82,7 @@ for (i in 1:length(site_data$field_site_id)) {
     summarize(air_temperature = mean(prediction)) |> 
     mutate(air_temperature = air_temperature - 273.15) |> 
     select(datetime, site_id, air_temperature, parameter)
+  message(site_data$field_site_id[i], ' stage 2 data downloaded')
   
   noaa_past_mean <- bind_rows(noaa_past_mean, noaa_past_agg)
   noaa_future_mean <- bind_rows(noaa_future_mean, noaa_future_agg)
