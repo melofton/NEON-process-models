@@ -66,11 +66,11 @@ for (i in 1:length(site_data$field_site_id)) {
   
   # New forecast only available at 5am UTC the next day
   forecast_date <- Sys.Date() 
-  noaa_date <- max(noaa_past_agg$datetime) + days(1)
+  noaa_date <- forecast_date - days(1)
   
   noaa_future <- df_future |> 
     dplyr::filter(reference_datetime == noaa_date,
-                  datetime >= noaa_date,
+                  datetime >= forecast_date,
                   site_id %in% test_site,
                   variable == "air_temperature") |> 
     dplyr::collect()
