@@ -1,7 +1,3 @@
-installed_packages <- installed.packages()
-if (is.element('feasts', installed_packages) == F) {
-  install.packages('feasts')
-}
 
 # download the noaa once then apply the forecasts
 source('download_noaa.R')

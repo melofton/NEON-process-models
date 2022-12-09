@@ -34,17 +34,6 @@ df_future <- neon4cast::noaa_stage2()
 
 for (i in 1:length(site_data$field_site_id)) {
   test_site <- site_data$field_site_id[i]
-  # Do we need a value from yesterday to start?
-  forecast_starts <- targets %>%
-    filter(site_id == test_site) %>%
-    na.omit() %>%
-    group_by(variable, site_id) %>%
-    # Start the day after the most recent non-NA value
-    dplyr::summarise(start_date = max(datetime) + lubridate::days(1)) %>% # Date
-    dplyr::mutate(h = (Sys.Date() - start_date) + 30) %>% # Horizon value
-    dplyr::filter(variable == 'temperature') %>%
-    dplyr::ungroup()
-  
   
   # Only need the air temperature from the test_site
   noaa_past <- df_past |> 
