@@ -6,6 +6,7 @@ create_mme <- function(forecast_models, # vector of list of model names
                        forecast_date, # when is the forecast for (what forecast to grab)
                        s3 = s3) # the s3 region to look for the forecasts
   {
+  message('generating ensemble for ', forecast_models)
   n_models <- length(forecast_models)
   sample <- round(n / n_models, digits = 0)
   
