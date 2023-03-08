@@ -24,11 +24,16 @@ s3 <- s3_bucket("neon4cast-forecasts/raw/aquatics",
 forecast_date <- as.character(Sys.Date() - 1)
 
 # generate ensembles
+if (dir.exists('./Forecasts/ensembles') != T) {
+  dir.create('./Forecasts/ensembles', recursive = T)
+}
+
 # Ensemble 1 = empirical baselines (RW + climatology)
 create_mme(forecast_models = c('persistenceRW',
                                'climatology'),
            ensemble_name = 'baseline_ensemble',
-           forecast_date = forecast_date, s3 = s3, n = 200)
+           forecast_date = forecast_date, 
+           s3 = s3, n = 200)
 
 
 # Submit new ensemble forecasts
