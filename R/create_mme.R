@@ -25,13 +25,14 @@ create_mme <- function(forecast_models, # vector of list of model names
       filter(variable == 'temperature') |>
       group_by(site_id) |> 
       # remove sites that contain NAs
-      filter(!any(is.na(prediction)))
+      filter(!any(is.na(prediction))) |> 
+      ungroup()
     
     message(forecast_models[i], ' read in')
     
     # different workflow if the forecast is an ensemble (sample) or normal family
     if (forecast$family[1] != 'sample') {
-      forecast_sample <- forecast |> 
+      forecast_normal <- forecast |> 
         
         pivot_wider(names_from = parameter,
                     values_from = prediction, 
@@ -45,7 +46,7 @@ create_mme <- function(forecast_models, # vector of list of model names
         mutate(parameter = as.character(row_number()),
                model_id = ensemble_name, 
                reference_datetime = forecast_date)
-      
+      mme_forecast <- bind_rows(mme_forecast, forecast_normal) 
     } else { # for an ensemble forecast
       forecast_sample <- forecast %>%
         distinct(parameter) %>%
@@ -53,10 +54,8 @@ create_mme <- function(forecast_models, # vector of list of model names
         left_join(., forecast, by = c("parameter")) %>%
         mutate(model_id = ensemble_name, 
                reference_datetime = forecast_date) 
+      mme_forecast <- bind_rows(mme_forecast, forecast_sample) 
     }
-    
-    
-    mme_forecast <- bind_rows(mme_forecast, forecast_sample) 
     
   }
   
@@ -65,7 +64,8 @@ create_mme <- function(forecast_models, # vector of list of model names
   # need to recode the parameter values so each is unqiue
   mme_forecast <- mme_forecast |> 
     group_by(datetime, site_id) |> 
-    mutate(parameter_recode = row_number()) |> 
+    mutate(parameter = row_number(),
+           family = 'ensemble') |> 
     ungroup()
   
   if (length(unique(mme_forecast$parameter)) != n) {
@@ -76,4 +76,6 @@ create_mme <- function(forecast_models, # vector of list of model names
     readr::write_csv(file.path('./Forecasts/ensembles', filename))
   
   message(ensemble_name, ' generated')
+  
+  neon4cast::forecast_output_validator(file.path('./Forecasts/ensembles', filename))
 }
