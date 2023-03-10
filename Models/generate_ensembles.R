@@ -17,8 +17,7 @@ Sys.unsetenv("AWS_S3_ENDPOINT")
 Sys.setenv(AWS_EC2_METADATA_DISABLED="TRUE")
 
 # where are the raw forecasts
-s3 <- s3_bucket("neon4cast-forecasts/raw/aquatics", 
-                endpoint_override= "data.ecoforecast.org")
+s3 <- "neon4cast-forecasts/parquet/aquatics/"
 
 # when do you want to generate the MMEs for
 forecast_date <- as.character(Sys.Date() - 1)
@@ -32,6 +31,13 @@ if (dir.exists('./Forecasts/ensembles') != T) {
 create_mme(forecast_models = c('persistenceRW',
                                'climatology'),
            ensemble_name = 'baseline_ensemble',
+           forecast_date = forecast_date, 
+           s3 = s3, n = 200)
+
+# Ensemble 2 = climatology + fARIMA
+create_mme(forecast_models = c('fARIMA',
+                               'climatology'),
+           ensemble_name = 'fARIMA_clim_ensemble',
            forecast_date = forecast_date, 
            s3 = s3, n = 200)
 
