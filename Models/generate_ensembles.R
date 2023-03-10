@@ -1,9 +1,9 @@
 # Generate some ensemble forecasts based on those submitted
 
 # 1. Start by looking in the bucket and grabbing the forecasts
-# 2. Subsample the forecast to an equal ensemble size
+# 2. Sub-sample the forecast to an equal ensemble size (n=200)
 # 3. Check that it's in the EFI format
-# 4. Submit forecast to challenge!
+# 4. Submit all the ensemble forecast to challenge!
 setwd(here::here())
 library(tidyverse)
 library(arrow)
