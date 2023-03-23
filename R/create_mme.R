@@ -45,7 +45,9 @@ create_mme <- function(forecast_models, # vector of list of model names
         # parameter value needs to be character
         mutate(parameter = as.character(row_number()),
                model_id = ensemble_name, 
-               reference_datetime = forecast_date)
+               reference_datetime = forecast_date,
+               variable = 'temperature',
+               family = 'ensemble')
       mme_forecast <- bind_rows(mme_forecast, forecast_normal) 
     } else { # for an ensemble forecast
       forecast_sample <- forecast %>%
@@ -53,7 +55,8 @@ create_mme <- function(forecast_models, # vector of list of model names
         slice_sample(n = sample) %>%
         left_join(., forecast, by = c("parameter")) %>%
         mutate(model_id = ensemble_name, 
-               reference_datetime = forecast_date) 
+               reference_datetime = forecast_date,
+               parameter = as.character(parameter)) 
       mme_forecast <- bind_rows(mme_forecast, forecast_sample) 
     }
     
