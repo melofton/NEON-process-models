@@ -50,6 +50,16 @@ create_mme(forecast_models = c('flareGLM',
            forecast_date = forecast_date,
            s3 = s3, n = 200)
 
+# Ensemble 4 = FLARE-LER + baselines
+create_mme(forecast_models = c('flareGLM',
+                               'flareGOTM',
+                               'flareSimstrat',
+                               'climatology', 
+                               'persistenceRW'),
+           ensemble_name = 'flare_ler_baselines',
+           forecast_date = forecast_date,
+           s3 = s3, n = 200)
+
 
 # Submit new ensemble forecasts
 todays_ensembles <- list.files('./Forecasts/ensembles', pattern = forecast_date)
