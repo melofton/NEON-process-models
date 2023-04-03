@@ -1,0 +1,24 @@
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: "0 13 * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: eco4cast/rocker-neon4cast
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      
+      - name: Install python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        shell: bash
+
