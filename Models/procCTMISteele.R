@@ -172,7 +172,7 @@ convert.to.efi_standard <- function(df){
                            'parameter', 'variable', 'prediction', 'model_id')))
 }
 message('converting to EFI standard')
-procCTMIMonod_EFI <- convert.to.efi_standard(forecast)
+procCTMISteele_EFI <- convert.to.efi_standard(forecast)
   
 
 forecast_file <- paste0('aquatics-', procCTMISteele_EFI$reference_datetime[1], '-', team_name, '.csv.gz')

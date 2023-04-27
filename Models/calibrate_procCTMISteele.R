@@ -43,7 +43,7 @@ targets <- targets |>
 targets <- left_join(targets, noaa_past_mean, by = c("datetime","site_id"))
 
 
-j=1
+j=7
 
 fit_data <- targets %>%
     filter(site_id == forecast_starts$site_id[j] & complete.cases(.)) %>%
@@ -86,7 +86,7 @@ proc_model <- function(par, wtemp, chla, swr){
   pred_chla = proc_model(par = fit2$par, wtemp, chla, swr)
   plot(fit_data$datetime, chla, ylim = c(0, max(chla)))
   lines(fit_data$datetime, pred_chla, col = "red")
-  rmse(par = par, chla, wtemp, swr)
+  rmse(par = fit2$par, chla, wtemp, swr)
   
 # parms <- data.frame(site_id = sites,
 #                     Tmin = rep(NA, length(sites)),
@@ -95,8 +95,8 @@ proc_model <- function(par, wtemp, chla, swr){
 #                     muopt = rep(NA, length(sites)),
 #                     I_K = rep(NA, length(sites)),
 #                     R_growth = rep(NA, length(sites)),
-#                     R_resp = rep(NA, length(sites)))
-# parms$RMSE <- NA
+#                     R_resp = rep(NA, length(sites)),
+#                     RMSE = rep(NA, length(sites)))
 parms <- read.csv("./Models/procCTMISteeleParameters.csv")
 parms[j,c(2:9)] <- c(fit2$par,rmse(par = fit2$par, chla, wtemp, swr))
 write.csv(parms, "./Models/procCTMISteeleParameters.csv", row.names = FALSE)
