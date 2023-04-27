@@ -1,25 +1,23 @@
-# ARIMA model with air temperature
-# remotes::install_github("tidyverts/fable")
+# procCTMIMonod model 
 library(fable)
 library(tsibble)
 library(tidyverse)
 library(neon4cast)
 library(lubridate)
-#library(rMR)
 library(arrow)
 
 options(dplyr.summarise.inform = FALSE)
 
 # submission information
-team_name <- "fARIMA"
+team_name <- "procCTMIMonod"
 
 # Target data
 targets <- readr::read_csv("https://data.ecoforecast.org/neon4cast-targets/aquatics/aquatics-targets.csv.gz", guess_max = 1e6)
 
-sites <- unique(targets$site_id)
-
 site_data <- readr::read_csv("https://raw.githubusercontent.com/eco4cast/neon4cast-targets/main/NEON_Field_Site_Metadata_20220412.csv") |> 
   dplyr::filter(aquatics == 1)
+
+sites = c("BARC","CRAM","LIRO","PRLA","PRPO","SUGG","TOOK")
 
 # Do we need a value from yesterday to start?
 forecast_starts <- targets %>%
@@ -28,7 +26,7 @@ forecast_starts <- targets %>%
   # Start the day after the most recent non-NA value
   dplyr::summarise(start_date = max(datetime) + lubridate::days(1)) %>% # Date
   dplyr::mutate(h = (Sys.Date() - start_date) + 30) %>% # Horizon value
-  dplyr::filter(variable == 'temperature') %>%
+  dplyr::filter(variable == 'chla' & site_id %in% sites) %>%
   dplyr::ungroup()
 
 
@@ -38,11 +36,11 @@ forecast_starts <- targets %>%
 
 targets <- targets |> 
   select(datetime, site_id, variable, observation) |> 
-  filter(variable == 'temperature') |> 
+  filter(variable == 'chla') |> 
   pivot_wider(names_from = "variable", values_from = "observation") %>%
-  filter(!is.na(temperature))
+  filter(!is.na(chla) & site_id %in% sites)
 
-targets <- left_join(targets, noaa_past_mean, by = c("datetime","site_id"))
+targets <-  left_join(targets, noaa_past_mean, by = c("datetime","site_id"))
 
 
 
@@ -83,22 +81,55 @@ noaa_ensembles <- split(noaa_weather, f = noaa_weather$parameter)
 test_scenarios <- lapply(noaa_ensembles, as_tsibble, key = 'site_id', index = 'datetime')
 
 
-message('starting ARIMA model fitting and forecast generations')
-# Fits separate LM with ARIMA errors for each site
-ARIMA_model <- targets %>%
-  as_tsibble(key = 'site_id', index = 'datetime') %>%
-  # add NA values for explicit gaps
-  tsibble::fill_gaps() %>%
-  model(ARIMA(temperature ~ air_temperature)) 
-message('ARIMA fitted')
+message('starting procCTMIMonod forecast generations')
 
-# Forecast using the fitted model
-ARIMA_fable <- ARIMA_model %>%
-  generate(new_data = test_scenarios, bootstrap = T, times = 10) %>%
-  mutate(variable = 'temperature',
-         # Recode the ensemble number based on the scenario and replicate
-         parameter = as.numeric(.rep) + (10 * (as.numeric(.scenario) - 1)))  %>%
-  filter(datetime > Sys.Date())
+forecast <- tibble(datetime = Date(),
+                   site_id = as.character(),
+                   prediction = as.numeric(),
+                   variable = as.character(),
+                   parameter = as.numeric())
+
+parms <- read_csv("./Models/procCTMIMonodParameters.csv")
+
+for(j in 1:nrow(forecast_starts)){
+  
+  chla = targets %>%
+    filter(site_id == forecast_starts$site_id[j] & complete.cases(.)) %>%
+    pull(chla) 
+  
+  par = parms %>%
+    filter(site_id == forecast_starts$site_id[j]) %>%
+    pivot_longer(Tmin:R_resp, names_to = "parameter", values_to = "value") %>%
+    pull(value)
+  
+  for(k in 1:length(test_scenarios)){
+    
+    forecast_data <- test_scenarios[[k]] %>%
+      filter(site_id == sites[j])
+    
+    wtemp = forecast_data$air_temperature
+    swr = forecast_data$surface_downwelling_shortwave_flux_in_air
+    
+    pred_chla <- proc_model(par = par,
+                            wtemp = wtemp,
+                            chla = chla,
+                            swr = swr)
+    
+    fc <- tibble(datetime = forecast_data$datetime,
+                 site_id = forecast_data$site_id,
+                 prediction = pred_chla,
+                 variable = "chla",
+                 parameter = forecast_data$parameter)
+    
+    forecast <- bind_rows(forecast, fc)
+    
+  }
+  
+}
+
+forecast <- forecast %>%
+  filter(datetime >= Sys.Date())
+
 message('forecast generated')
 
 # Function to convert to EFI standard
@@ -106,21 +137,19 @@ convert.to.efi_standard <- function(df){
   
   df %>% 
     as_tibble() %>%
-    dplyr::rename(prediction = .sim) %>%
-    dplyr::select(datetime, site_id, prediction, variable, parameter) %>%
     dplyr::mutate(family = "ensemble",
                   model_id = team_name,
                   reference_datetime = min(datetime) - lubridate::days(1)) %>%
     dplyr::select(any_of(c('datetime', 'reference_datetime', 'site_id', 'family', 
-                           'parameter', 'variable', 'prediction', 'ensemble', 'model_id')))
+                           'parameter', 'variable', 'prediction', 'model_id')))
 }
 message('converting to EFI standard')
-ARIMA_EFI <- convert.to.efi_standard(ARIMA_fable)
+procCTMIMonod_EFI <- convert.to.efi_standard(forecast)
   
 
-forecast_file <- paste0('aquatics-', ARIMA_EFI$reference_datetime[1], '-', team_name, '.csv.gz')
+forecast_file <- paste0('aquatics-', procCTMIMonod_EFI$reference_datetime[1], '-', team_name, '.csv.gz')
 
-write_csv(ARIMA_EFI, forecast_file)
+write_csv(procCTMIMonod_EFI, forecast_file)
 # Submit forecast!
 
 # Now we can submit the forecast output to the Challenge using 
