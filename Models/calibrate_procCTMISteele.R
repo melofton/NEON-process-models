@@ -9,7 +9,7 @@ library(arrow)
 options(dplyr.summarise.inform = FALSE)
 
 # submission information
-team_name <- "procCTMIMonod"
+team_name <- "procCTMISteele"
 
 # Target data
 targets <- readr::read_csv("https://data.ecoforecast.org/neon4cast-targets/aquatics/aquatics-targets.csv.gz", guess_max = 1e6)
@@ -77,8 +77,7 @@ proc_model <- function(par, wtemp, chla, swr){
   wtemp = fit_data$air_temperature
   swr = fit_data$surface_downwelling_shortwave_flux_in_air
   
-  par <- c(1, 20, 30, 0.04, 100, 0.4, 0.4)
-  par <- c(parms[j,2],parms[j,3], parms[j,4], parms[j,5], parms[j,6], parms[j,7], parms[j,8])
+  par <- c(1, 20, 30, 0.04, 250, 0.4, 0.4)
 
   fit2 <- optim(par = par, fn = rmse, method = "Nelder-Mead", chla = chla,
                 wtemp = wtemp, swr = swr, hessian = FALSE, control=list(parscale=c(par)))
@@ -98,6 +97,6 @@ proc_model <- function(par, wtemp, chla, swr){
 #                     R_growth = rep(NA, length(sites)),
 #                     R_resp = rep(NA, length(sites)))
 # parms$RMSE <- NA
-parms <- read.csv("./Models/procCTMIMonodParameters.csv")
+parms <- read.csv("./Models/procCTMISteeleParameters.csv")
 parms[j,c(2:9)] <- c(fit2$par,rmse(par = fit2$par, chla, wtemp, swr))
-write.csv(parms, "./Models/procCTMIMonodParameters.csv", row.names = FALSE)
+write.csv(parms, "./Models/procCTMISteeleParameters.csv", row.names = FALSE)
