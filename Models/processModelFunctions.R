@@ -85,32 +85,7 @@ eppley_norberg <- function(wtemp, z, w, a, b){
   return(fT)
 }
 
-#build process model
-#@states vector of named states
-#@par vector of named parameters
 
-proc_model <- function(par, wtemp, chla, swr){
-  pred_chla = NULL
-  pred_chla[1] <- chla[1]
-  for(i in 2:length(wtemp)){
-    
-    fT = ctmi(wtemp = wtemp[i],
-              Tmin = par[1],
-              Topt = par[2],
-              Tmax = par[3],
-              muopt = par[4])
-    fI = monod(swr = swr[i],
-               I_K = par[5])
-    fR = 1.08^(wtemp[i] - 20)
-    
-    growth = pred_chla[i-1] * par[6] * min(fT, fI)
-    respiration = pred_chla[i-1] * par[7] * fR
-    
-    pred_chla[i] = pred_chla[i-1] + growth - respiration 
-    
-  }
-  return(pred_chla)
-}
 
 
 #build likelihood model
