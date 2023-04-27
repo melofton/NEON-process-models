@@ -60,8 +60,8 @@ proc_model <- function(par, wtemp, chla, swr){
               Topt = par[2],
               Tmax = par[3],
               muopt = par[4])
-    fI = monod(swr = swr[i],
-               I_K = par[5])
+    fI = steele(swr = swr[i],
+               I_S = par[5])
     fR = 1.08^(wtemp[i] - 20)
     
     growth = pred_chla[i-1] * par[6] * min(fT, fI)
