@@ -42,7 +42,7 @@ targets <- targets |>
 targets <- left_join(targets, noaa_past_mean, by = c("datetime","site_id"))
 
 
-j=7
+j=4
 
 fit_data <- targets %>%
     filter(site_id == forecast_starts$site_id[j] & complete.cases(.)) %>%
@@ -77,13 +77,13 @@ proc_model <- function(par, wtemp, chla, swr){
   wtemp = fit_data$air_temperature
   swr = fit_data$surface_downwelling_shortwave_flux_in_air
   
-  par <- c(0.1, 0.1, 0.1, 0.1, 100, 0.4, 0.4)
+  par <- c(1, 1, 1, 1, 250, 0.85, 0.85)
 
   fit2 <- optim(par = par, fn = rmse, method = "Nelder-Mead", chla = chla,
                 wtemp = wtemp, swr = swr, hessian = FALSE, control=list(parscale=c(par)))
   
   fit2$par
-  pred_chla = proc_model(par = fit2$par, wtemp, chla, swr)
+  pred_chla = proc_model(par = par, wtemp, chla, swr)
   plot(fit_data$datetime, chla, ylim = c(0, max(chla)))
   lines(fit_data$datetime, pred_chla, col = "red")
   rmse(par = fit2$par, chla, wtemp, swr)
@@ -105,5 +105,4 @@ p1 <- read.csv("./Models/procCTMIMonodParameters.csv")
 p2 <- read.csv("./Models/procCTMISteeleParameters.csv")
 p3 <- read.csv("./Models/procBlanchardSteeleParameters.csv")
 p4 <- read.csv("./Models/procBlanchardMonodParameters.csv")
-
 

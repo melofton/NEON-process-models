@@ -43,7 +43,7 @@ targets <- targets |>
 targets <- left_join(targets, noaa_past_mean, by = c("datetime","site_id"))
 
 
-j=1
+j=7
 
 fit_data <- targets %>%
     filter(site_id == forecast_starts$site_id[j] & complete.cases(.)) %>%
@@ -77,8 +77,7 @@ proc_model <- function(par, wtemp, chla, swr){
   wtemp = fit_data$air_temperature
   swr = fit_data$surface_downwelling_shortwave_flux_in_air
   
-  par <- c(1, 20, 30, 0.04, 100, 0.4, 0.4)
-  par <- c(parms[j,2],parms[j,3], parms[j,4], parms[j,5], parms[j,6], parms[j,7], parms[j,8])
+  par <- c(-5, 5, 10, 0.04, 100, 0.3, 0.3)
 
   fit2 <- optim(par = par, fn = rmse, method = "Nelder-Mead", chla = chla,
                 wtemp = wtemp, swr = swr, hessian = FALSE, control=list(parscale=c(par)))

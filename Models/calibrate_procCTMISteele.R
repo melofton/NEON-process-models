@@ -77,7 +77,7 @@ proc_model <- function(par, wtemp, chla, swr){
   wtemp = fit_data$air_temperature
   swr = fit_data$surface_downwelling_shortwave_flux_in_air
   
-  par <- c(1, 20, 30, 0.04, 250, 0.4, 0.4)
+  par <- c(-10, 1, 10, 0.04, 100, 0.2, 0.2)
 
   fit2 <- optim(par = par, fn = rmse, method = "Nelder-Mead", chla = chla,
                 wtemp = wtemp, swr = swr, hessian = FALSE, control=list(parscale=c(par)))
@@ -100,3 +100,8 @@ proc_model <- function(par, wtemp, chla, swr){
 parms <- read.csv("./Models/procCTMISteeleParameters.csv")
 parms[j,c(2:9)] <- c(fit2$par,rmse(par = fit2$par, chla, wtemp, swr))
 write.csv(parms, "./Models/procCTMISteeleParameters.csv", row.names = FALSE)
+
+par = parms %>%
+  filter(site_id == forecast_starts$site_id[j]) %>%
+  pivot_longer(Tmin:R_resp, names_to = "parameter", values_to = "value") %>%
+  pull(value)
