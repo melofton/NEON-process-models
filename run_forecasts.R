@@ -1,3 +1,6 @@
+# set reference datetime
+curr_reference_datetime <- Sys.Date()
+message(paste("creating forecasts for",print(curr_reference_datetime)))
 
 # download the noaa once then apply the forecasts
 source('download_noaa.R')

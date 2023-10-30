@@ -24,8 +24,9 @@ forecast_starts <- targets %>%
   na.omit() %>%
   group_by(variable, site_id) %>%
   # Start the day after the most recent non-NA value
+  dplyr::filter(datetime <= curr_reference_datetime) %>%
   dplyr::summarise(start_date = max(datetime) + lubridate::days(1)) %>% # Date
-  dplyr::mutate(h = (Sys.Date() - start_date) + 30) %>% # Horizon value
+  dplyr::mutate(h = (curr_reference_datetime - start_date) + 30) %>% # Horizon value
   dplyr::filter(variable == 'chla' & site_id %in% sites) %>%
   dplyr::ungroup()
 
@@ -156,7 +157,7 @@ for(j in 1:nrow(forecast_starts)){
 }
 
 forecast <- forecast %>%
-  filter(datetime >= Sys.Date())
+  filter(datetime >= curr_reference_datetime)
 
 message('forecast generated')
 

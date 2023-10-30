@@ -55,7 +55,7 @@ for (i in 1:length(site_data$field_site_id)) {
     pivot_wider(names_from = variable, values_from = daily_mean)
   
   # New forecast only available at 5am UTC the next day
-  forecast_date <- Sys.Date() 
+  forecast_date <- curr_reference_datetime 
   noaa_date <- forecast_date - days(1)
   
   noaa_future <- df_future |> 
