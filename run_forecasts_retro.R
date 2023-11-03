@@ -43,9 +43,14 @@ missed_dates <- this_year |>
   pull(date) |> 
   as_date()
 
+noaa_missing_dates <- as_date("2023-01-07","2023-01-20","2023-05-23")
+
 if (length(missed_dates) != 0) {
   for (i in 1:length(missed_dates)) {
     curr_reference_datetime <- missed_dates[i]
+    
+    if(curr_reference_datetime %in% noaa_missing_dates) next
+    
     message(paste("creating forecasts for",print(curr_reference_datetime)))
     
     # download the noaa once then apply the forecasts
