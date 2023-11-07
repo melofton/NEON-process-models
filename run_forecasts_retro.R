@@ -82,6 +82,8 @@ if (length(missed_dates) != 0) {
     source('./Models/procEppleyNorbergMonod.R')
     message('procEppleyNorbergMonod model submitted')
     
+    rm(list=setdiff(ls(), "missed_dates"))
+    message('environment cleared')
   }
 } else {
   message('no missed forecasts')  
