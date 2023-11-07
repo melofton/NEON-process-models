@@ -48,7 +48,7 @@ missed_dates <- this_year |>
   pull(date) |> 
   as_date()
 
-noaa_missing_dates <- as_date(c("2023-01-07","2023-01-20","2023-05-23"))
+noaa_missing_dates <- as_date(c("2023-01-06","2023-01-19","2023-05-22"))
 
 missed_dates <- missed_dates[!missed_dates %in% noaa_missing_dates]
 
