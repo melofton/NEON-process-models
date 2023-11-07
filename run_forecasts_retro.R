@@ -50,11 +50,11 @@ missed_dates <- this_year |>
 
 noaa_missing_dates <- as_date(c("2023-01-07","2023-01-20","2023-05-23"))
 
+missed_dates <- missed_dates[!missed_dates %in% noaa_missing_dates]
+
 if (length(missed_dates) != 0) {
   for (i in 1:length(missed_dates)) {
     curr_reference_datetime <- missed_dates[i]
-    
-    if(curr_reference_datetime %in% noaa_missing_dates) next
     
     message(paste("creating forecasts for",print(curr_reference_datetime)))
     
