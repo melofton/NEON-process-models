@@ -24,10 +24,11 @@ forecast_starts <- targets %>%
   group_by(variable, site_id) %>%
   dplyr::filter(datetime <= curr_reference_datetime) %>%
   # Start the day after the most recent non-NA value
-  dplyr::summarise(start_date = max(datetime) + lubridate::days(1)) %>% # Date
-  dplyr::mutate(h = (curr_reference_datetime - start_date) + 30) %>% # Horizon value
+  dplyr::summarise(datetime = max(datetime)) %>% # Date
+  dplyr::mutate(h = (curr_reference_datetime - datetime) + 30) %>% # Horizon value
   dplyr::filter(variable == 'chla' & site_id %in% sites) %>%
-  dplyr::ungroup()
+  dplyr::ungroup() %>%
+  left_join(targets, by = c("site_id","variable","datetime"))
 
 
 # Merge in past NOAA data into the targets file, matching by date.
@@ -55,7 +56,7 @@ for (i in 1:nrow(forecast_starts)) {
     # only take the past weather that is after the last water temperature observation and 
       # less than what is in the weather forecast
     filter(site_id == forecast_starts$site_id[i]  &
-             datetime >= forecast_starts$start_date[i] &
+             datetime >= forecast_starts$datetime[i] &
              datetime < min(noaa_future_mean$datetime)) %>% 
     # create a past "ensemble" - just repeats each value 31 times
     slice(rep(1:n(), 31))
@@ -70,8 +71,10 @@ past_weather <- past_weather %>%
 
 # Combine the past weather with weather forecast
 message('creating weather ensembles')
+max_horizon <- curr_reference_datetime + 30
 noaa_weather <- bind_rows(past_weather, noaa_future_mean) %>%
-  arrange(site_id, parameter)
+  arrange(site_id, parameter) %>%
+  filter(datetime <= max_horizon)
 
 # Split the NOAA forecast into each ensemble (parameter)
 noaa_ensembles <- split(noaa_weather, f = noaa_weather$parameter)
@@ -80,8 +83,7 @@ noaa_ensembles <- split(noaa_weather, f = noaa_weather$parameter)
   # air-temperature forecast ensemble
 test_scenarios <- lapply(noaa_ensembles, as_tsibble, key = 'site_id', index = 'datetime')
 
-
-message('starting procBlanchardSteele forecast generations')
+message('starting procBlanchardMonod forecast generations')
 
 #define model
 #build process model
@@ -90,7 +92,7 @@ message('starting procBlanchardSteele forecast generations')
 source("./Models/processModelFunctions.R")
 proc_model <- function(par, wtemp, chla, swr){
   pred_chla = NULL
-  pred_chla[1] <- chla[1]
+  pred_chla[1] <- chla
   for(i in 2:length(wtemp)){
     
     fT = blanchard(wtemp = wtemp[i],
@@ -121,9 +123,7 @@ parms <- read_csv("./Models/procBlanchardMonodParameters.csv")
 
 for(j in 1:nrow(forecast_starts)){
   
-  chla = targets %>%
-    filter(site_id == forecast_starts$site_id[j] & complete.cases(.)) %>%
-    pull(chla) 
+  chla = pull(forecast_starts[j,"observation"])
   
   par = parms %>%
     filter(site_id == forecast_starts$site_id[j]) %>%
@@ -167,7 +167,7 @@ convert.to.efi_standard <- function(df){
     as_tibble() %>%
     dplyr::mutate(family = "ensemble",
                   model_id = team_name,
-                  reference_datetime = min(datetime) - lubridate::days(1)) %>%
+                  reference_datetime = min(datetime)) %>%
     dplyr::select(any_of(c('datetime', 'reference_datetime', 'site_id', 'family', 
                            'parameter', 'variable', 'prediction', 'model_id')))
 }
@@ -177,7 +177,7 @@ procBlanchardMonod_EFI <- convert.to.efi_standard(forecast)
 
 forecast_file <- paste0('aquatics-', procBlanchardMonod_EFI$reference_datetime[1], '-', team_name, '.csv.gz')
 
-write_csv(procBlanchardMonod_EFI, forecast_file)
+write_csv(procBlanchardMonod_EFI, file = forecast_file)
 # Submit forecast!
 
 # Now we can submit the forecast output to the Challenge using 

@@ -3,23 +3,16 @@ library(tsibble)
 library(aws.s3)
 
 # check for any missing forecasts
-message("==== Checking for missed climatology forecasts ====")
-challenge_model_names <- c('procCTMIMonod','procBlanchardMonod','procBlanchardSteele',
-                           'procCTMISteele','procEppleyNorbergMonod','procEppleyNorbergSteele',
-                           'procHinshelwoodMonod','procHinshelwoodSteele')
-
+message("==== Checking for missed forecasts ====")
+challenge_model_name <- 'procBlanchardMonod'
 
 # Dates of forecasts 
 today <- paste(Sys.Date() - days(2), '00:00:00')
 this_year <- data.frame(date = as.character(paste0(seq.Date(as_date('2023-01-01'), to = as_date(today), by = 'day'), ' 00:00:00')),
-                        exists_procCTMIMonod = NA,
-                        exists_procBlanchardMonod = NA,
-                        exists_procBlanchardSteele = NA,
-                        exists_procCTMISteele = NA,
-                        exists_procEppleyNorbergMonod = NA,
-                        exists_procEppleyNorbergSteele = NA,
-                        exists_procHinshelwoodMonod = NA,
-                        exists_procHinshelwoodSteele = NA) 
+                        exists = NA,
+                        already_rerun = NA)
+# issue resolved on 9 Oct 2023
+end <- as_date('2023-10-09')
 
 # what forecasts have already been submitted?
 challenge_s3_region <- "data"
@@ -27,23 +20,35 @@ challenge_s3_endpoint <- "ecoforecast.org"
 
 # is that file present in the bucket?
 for (i in 1:nrow(this_year)) {
-  for(j in 1:length(challenge_model_names)){
-  forecast_file <- paste0('aquatics-', as_date(this_year$date[i]), '-', challenge_model_names[j], '.csv.gz')
+  forecast_file <- paste0('aquatics-', as_date(this_year$date[i]), '-', challenge_model_name, '.csv.gz')
   
-  this_year[i,j+1] <- suppressMessages(aws.s3::object_exists(object = file.path("raw", 'aquatics', forecast_file),
+  this_year$exists[i] <- suppressMessages(aws.s3::object_exists(object = file.path("raw", 'aquatics', forecast_file),
                                                                 bucket = "neon4cast-forecasts",
                                                                 region = challenge_s3_region,
                                                                 base_url = challenge_s3_endpoint))
+  
+  # if it is present, has it been submitted recently?
+  if (this_year$exists[i]) {
+    modified <- attr(suppressMessages(aws.s3::head_object(object = file.path("raw", 'aquatics', forecast_file),
+                                                          bucket = "neon4cast-forecasts",
+                                                          region = challenge_s3_region,
+                                                          base_url = challenge_s3_endpoint)), 
+                     "last-modified")
+    
+    this_year$already_rerun[i] <- ifelse(parse_date_time(gsub('GMT', '', str_split_1(modified, ', ')[2]),
+                                                         orders = "%d %b %Y %H:%M:%S") > end, 
+                                         T, F)
   }
-  }
+}
 
 # which dates do you need to generate forecasts for?
+# those that are missing or haven't been submitted
 missed_dates <- this_year |> 
-  filter(if_any(starts_with("exists"), ~ . == F)) |> 
+  filter(!(exists == T &  already_rerun == T)) |> 
   pull(date) |> 
   as_date()
 
-noaa_missing_dates <- as_date("2023-01-07","2023-01-20","2023-05-23")
+noaa_missing_dates <- as_date(c("2023-01-07","2023-01-20","2023-05-23"))
 
 if (length(missed_dates) != 0) {
   for (i in 1:length(missed_dates)) {
@@ -56,12 +61,6 @@ if (length(missed_dates) != 0) {
     # download the noaa once then apply the forecasts
     source('download_noaa.R')
     message('NOAA downloads complete!')
-    
-    message('checking for NAs in NOAA data')
-    if(any(is.na(noaa_past_mean$air_temperature))) next
-    if(any(is.na(noaa_past_mean$surface_downwelling_shortwave_flux_in_air))) next
-    if(any(is.na(noaa_future_mean$air_temperature))) next
-    if(any(is.na(noaa_future_mean$surface_downwelling_shortwave_flux_in_air))) next
     
     # Script to run forecasts
     source("ignore_sigpipes.R")

@@ -56,7 +56,8 @@ for (i in 1:length(site_data$field_site_id)) {
   
   # New forecast only available at 5am UTC the next day
   forecast_date <- curr_reference_datetime 
-  noaa_date <- forecast_date - days(1)
+  noaa_date <- forecast_date
+  max_horizon <- curr_reference_datetime + 30
   
   noaa_future <- df_future |> 
     dplyr::filter(reference_datetime == noaa_date,
@@ -75,8 +76,9 @@ for (i in 1:length(site_data$field_site_id)) {
     select(datetime, site_id, air_temperature, surface_downwelling_shortwave_flux_in_air, parameter)
   message(site_data$field_site_id[i], ' stage 2 data downloaded')
   
-  noaa_past_mean <- bind_rows(noaa_past_mean, noaa_past_agg)
-  noaa_future_mean <- bind_rows(noaa_future_mean, noaa_future_agg)
+  noaa_past_mean <- bind_rows(noaa_past_mean, noaa_past_agg) 
+  noaa_future_mean <- bind_rows(noaa_future_mean, noaa_future_agg) %>%
+    filter(datetime <= max_horizon)
   
   
 }

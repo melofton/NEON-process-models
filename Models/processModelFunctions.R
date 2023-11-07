@@ -23,7 +23,7 @@ monod <- function(swr, I_K){
 steele <- function(swr, I_S){
   x = swr/I_S
   fI = x * exp(1 - x)
-  if(swr < 5e-5 | fI < 5e-5){ fI = 0.0 }
+  if(is.na(swr)){ fI = NA} else if(swr < 5e-5 | fI < 5e-5){ fI = 0.0 }
   return(fI)
 }
 
