@@ -29,7 +29,7 @@ df_past <- neon4cast::noaa_stage3()
 # Forecasts
 
 
-df_future <- neon4cast::noaa_stage2()
+df_future <- neon4cast::noaa_stage2(start_date = curr_reference_datetime)
 
 
 for (i in 1:length(site_data$field_site_id)) {
