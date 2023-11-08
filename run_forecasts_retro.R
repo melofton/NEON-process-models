@@ -83,6 +83,7 @@ if (length(missed_dates) != 0) {
     message('procEppleyNorbergMonod model submitted')
     
     rm(list=setdiff(ls(), "missed_dates"))
+    gc()
     message('environment cleared')
   }
 } else {
