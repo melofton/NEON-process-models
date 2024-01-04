@@ -185,4 +185,4 @@ write_csv(procHinshelwoodSteele_EFI, forecast_file)
 # Now we can submit the forecast output to the Challenge using 
 neon4cast::forecast_output_validator(forecast_file)
 neon4cast::submit(forecast_file = forecast_file,
-                  ask = F, s3_region = 'data', s3_endpoint = 'ecoforecast.org')
+                  ask = F, s3_region = 'submit', s3_endpoint = 'ecoforecast.org')
